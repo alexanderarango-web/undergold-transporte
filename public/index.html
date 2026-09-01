@@ -730,7 +730,7 @@ function connectWS(onFirst){
       if(s===_lastJSON){ if(!_booted){ _booted=true; _wsBooter&&_wsBooter(); } return; }  // sin cambios reales: no re-dibujar
       _lastJSON=s; STATE=m.db||{}; try{localStorage.setItem(STORE_KEY,s);}catch(e){}
       if(!_booted){ _booted=true; _wsBooter&&_wsBooter(); }
-      else { if(_applyT) clearTimeout(_applyT); _applyT=setTimeout(applyRemoteState,120); }  // agrupa ráfagas
+      else { if(_applyT) clearTimeout(_applyT); _applyT=setTimeout(applyRemoteState,120); notifyNewMessages(); }  // agrupa ráfagas + avisa
     };
     _ws.onclose=function(){ _ws=null; setTimeout(function(){connectWS();},4000); };
     _ws.onerror=function(){ try{_ws.close();}catch(e){} };
@@ -743,6 +743,39 @@ function applyRemoteState(){
   if(v==='comu'){ if(typeof renderChatList==='function') renderChatList(); if(typeof refreshChatIfOpen==='function') refreshChatIfOpen(); return; }
   if(v==='gps'){ const el=document.getElementById('tbody-gps'); if(el){ let recs=sourceRecords('gps'); if(gpsFilter) recs=recs.filter(g=>g.conductor===gpsFilter); el.innerHTML=renderRows('gps',recs); } if(typeof updateDriverMarkers==='function') updateDriverMarkers(); return; }
   renderNav(); buildViews(); go(v);
+}
+/* ---------- NOTIFICACIONES (aviso al llegar un mensaje) ---------- */
+const APP_ICON="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='192'%20height='192'%3E%3Crect%20width='192'%20height='192'%20rx='42'%20fill='%231A1A18'/%3E%3Ctext%20x='96'%20y='132'%20font-family='Arial'%20font-size='120'%20font-weight='700'%20fill='%23fff'%20text-anchor='middle'%3EU%3C/text%3E%3C/svg%3E";
+let _swReg=null,_lastNotifTs=0;
+if(NET && 'serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').then(function(r){ _swReg=r; }).catch(function(){}); }
+function askNotifPerm(){ try{ if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission(); } }catch(e){} }
+function scanIncoming(){
+  const db=loadDB(); const chat=db.chat||{}; const me=(typeof meId==='function')?meId():null; const out=[];
+  if(!me) return out;
+  Object.keys(chat).forEach(function(cid){
+    const parts=cid.split('__'); if(parts.indexOf(me)<0) return;
+    const otherId=parts[0]===me?parts[1]:parts[0];
+    (chat[cid]||[]).forEach(function(m){ if(m.from!==me) out.push({fromName:m.fromName||otherId,text:m.text||'',otherId:otherId,tsNum:m.tsNum||0}); });
+  });
+  return out;
+}
+function initNotifBaseline(){ _lastNotifTs=scanIncoming().reduce(function(a,m){return Math.max(a,m.tsNum);},0); }
+function showNotif(title,body,tag){
+  const opts={body:body,icon:APP_ICON,badge:APP_ICON,tag:tag,renotify:true};
+  try{ if(_swReg && _swReg.showNotification){ _swReg.showNotification(title,opts); return; } }catch(e){}
+  try{ new Notification(title,opts); }catch(e){}
+}
+function notifyNewMessages(){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const nuevos=scanIncoming().filter(function(m){return m.tsNum>_lastNotifTs;});
+  if(!nuevos.length) return;
+  _lastNotifTs=nuevos.reduce(function(a,m){return Math.max(a,m.tsNum);},_lastNotifTs);
+  const viewingComu=(localStorage.getItem('transporte_view')==='comu');
+  nuevos.forEach(function(m){
+    const enEsteChat = !document.hidden && viewingComu && (typeof _chatWith!=='undefined') && _chatWith===m.otherId;
+    if(enEsteChat) return;                 // ya lo está viendo: no molestar
+    showNotif(m.fromName, m.text, m.otherId);
+  });
 }
 function records(mod){const db=loadDB();return db[mod]||[]}
 function sourceRecords(id){
@@ -1335,6 +1368,7 @@ function go(id){
   window.scrollTo({top:0,behavior:'smooth'});
   if(id==='gps') setTimeout(initGpsMap,90);
   if(id==='inicio') setTimeout(renderDashCharts,40);
+  if(id==='comu') askNotifPerm();
 }
 
 /* ---------- MODAL / CRUD ---------- */
@@ -1688,6 +1722,7 @@ function doLogin(){
   if(!found){ document.getElementById('loginErr').textContent='Usuario o contraseña incorrectos.'; return; }
   currentUser={user:found.user,nombre:found.nombre,rol:found.rol};
   localStorage.setItem('transporte_session',JSON.stringify(currentUser));
+  askNotifPerm();
   showApp();
 }
 function logout(){ localStorage.removeItem('transporte_session'); location.reload(); }
@@ -1712,6 +1747,7 @@ function showApp(){
     av.title=currentUser.nombre+' · '+currentUser.rol+' — clic para cerrar sesión';
     av.onclick=()=>{ if(confirm('¿Cerrar sesión?')) logout(); };
   }
+  initNotifBaseline();
 }
 
 /* ---------- INIT ---------- */
