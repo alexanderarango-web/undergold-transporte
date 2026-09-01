@@ -49,6 +49,9 @@
     font-size:11px;padding:5px 9px;border-radius:7px;opacity:0;pointer-events:none;transition:.15s;
     font-family:'Space Mono';letter-spacing:.04em;z-index:20}
   .nav button:hover .tip{opacity:1}
+  .nav button.has-unread::after{content:"";position:absolute;top:7px;right:7px;width:9px;height:9px;border-radius:50%;
+    background:#D9463B;border:2px solid var(--bg);box-shadow:0 0 0 3px rgba(217,70,59,.18);animation:pulseDot 1.8s ease-in-out infinite}
+  @keyframes pulseDot{0%,100%{box-shadow:0 0 0 2px rgba(217,70,59,.20)}50%{box-shadow:0 0 0 5px rgba(217,70,59,0)}}
   .avatar{width:42px;height:42px;border-radius:12px;border:1px solid var(--line-strong);
     display:flex;align-items:center;justify-content:center;font-family:'Space Mono';
     font-weight:700;font-size:13px;color:var(--ink-soft)}
@@ -730,7 +733,7 @@ function connectWS(onFirst){
       if(s===_lastJSON){ if(!_booted){ _booted=true; _wsBooter&&_wsBooter(); } return; }  // sin cambios reales: no re-dibujar
       _lastJSON=s; STATE=m.db||{}; try{localStorage.setItem(STORE_KEY,s);}catch(e){}
       if(!_booted){ _booted=true; _wsBooter&&_wsBooter(); }
-      else { if(_applyT) clearTimeout(_applyT); _applyT=setTimeout(applyRemoteState,120); notifyNewMessages(); }  // agrupa ráfagas + avisa
+      else { if(_applyT) clearTimeout(_applyT); _applyT=setTimeout(applyRemoteState,120); notifyNewMessages(); updateComuBadge(); }  // agrupa ráfagas + avisa
     };
     _ws.onclose=function(){ _ws=null; setTimeout(function(){connectWS();},4000); };
     _ws.onerror=function(){ try{_ws.close();}catch(e){} };
@@ -798,6 +801,12 @@ function renderNav(){
   document.getElementById('nav').innerHTML = MODULES.filter(canSee).map(m=>
     '<button data-id="'+m.id+'" onclick="go(\''+m.id+'\')" title="'+m.label+'">'+svg(I[m.icon])+'<span class="tip">'+m.label+'</span></button>'
   ).join('');
+  updateComuBadge();
+}
+function totalUnread(){ try{ return activeChats().reduce(function(a,c){return a+(c.unread||0);},0); }catch(e){ return 0; } }
+function updateComuBadge(){
+  const btn=document.querySelector('#nav button[data-id="comu"]');
+  if(btn) btn.classList.toggle('has-unread', totalUnread()>0);
 }
 
 /* ---------- DASHBOARD ---------- */
@@ -1167,6 +1176,7 @@ function openChat(collabId){
   document.getElementById('chatMain').innerHTML=chatMainHTML();
   markSeen(collabId);
   renderChatList();
+  updateComuBadge();
   const box=document.getElementById('chatMsgs'); if(box) box.scrollTop=box.scrollHeight;
   const inp=document.getElementById('chatInput'); if(inp) inp.focus();
 }
@@ -1204,6 +1214,7 @@ function refreshChatIfOpen(){
     }
     renderChatList();
   }
+  updateComuBadge();
 }
 
 function mapPanel(){
