@@ -1,0 +1,14 @@
+# Configuración automática para Render.com (opcional).
+# Si usas "New + → Blueprint" en Render y eliges tu repo, Render lee este archivo
+# y configura todo solo. Si prefieres el modo manual (New + → Web Service),
+# ignora este archivo y usa Build: "npm install" y Start: "npm start".
+services:
+  - type: web
+    name: undergold-transporte
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
