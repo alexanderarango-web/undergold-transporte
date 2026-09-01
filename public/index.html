@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Transporte · Undergold</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1A1A18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Undergold">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='192'%20height='192'%3E%3Crect%20width='192'%20height='192'%20rx='42'%20fill='%231A1A18'/%3E%3Ctext%20x='96'%20y='132'%20font-family='Arial'%20font-size='120'%20font-weight='700'%20fill='%23fff'%20text-anchor='middle'%3EU%3C/text%3E%3C/svg%3E">
+<title>Undergold Transporte</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -330,6 +337,83 @@
   @media(max-width:900px){.map-grid{grid-template-columns:1fr}}
   @media(max-width:1100px){.kpis{grid-template-columns:1fr 1fr 1fr}.panels{grid-template-columns:1fr}.stat-row{grid-template-columns:1fr 1fr}.mod-grid{grid-template-columns:1fr}}
   @media(max-width:680px){.main{padding:24px 18px 50px}.kpis{grid-template-columns:1fr 1fr}.search{display:none}.modal-fields-grid{grid-template-columns:1fr}.modal-fields-grid .field.full{grid-column:span 1}}
+
+  /* ============ MODO CELULAR ============ */
+  @media(max-width:760px){
+    /* layout general: navegación abajo tipo app */
+    .app{flex-direction:column}
+    .sidebar{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:auto;
+      flex-direction:row;align-items:center;gap:2px;padding:6px 8px;
+      border-right:none;border-top:1px solid var(--line-strong);
+      background:var(--surface);z-index:60;overflow-x:auto;box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+    .sidebar .logo{display:none}
+    .nav{flex-direction:row;gap:2px;flex:1 1 auto;justify-content:space-between}
+    .nav button{width:42px;height:42px;flex:0 0 auto;border-radius:11px}
+    .nav button.active::before{display:none}
+    .nav button.active{background:var(--ink);color:#fff}
+    .nav .tip{display:none}
+    .avatar{width:40px;height:40px;flex:0 0 auto;margin-left:4px}
+
+    .main{padding:18px 14px 92px;max-width:100%}   /* espacio para la barra inferior */
+    .topbar{margin-bottom:18px;gap:10px}
+    .crumbs{font-size:10px;letter-spacing:.05em;gap:8px}
+    .mod-head{margin-bottom:18px}
+    .mod-head h1,.hero h1{font-size:30px !important;line-height:1.08}
+    .mod-head p{font-size:14px}
+    h1.title{font-size:34px}
+
+    /* tarjetas de estadística y KPIs */
+    .stat-row{grid-template-columns:1fr 1fr}
+    .stat{padding:16px 16px}
+    .stat .v{font-size:30px}
+    .kpis{grid-template-columns:1fr 1fr}
+    .kpi{min-height:120px;padding:18px}
+    .panels{grid-template-columns:1fr !important}
+
+    /* dashboard */
+    .dash-grid{grid-template-columns:1fr !important}
+    .dash-grid .panel.span2{grid-column:span 1}
+    .chartbox{height:200px}
+
+    /* tablas: scroll horizontal */
+    .tablewrap{overflow-x:auto}
+    table{min-width:560px}
+
+    /* tarjetones / grids de tarjetas a una columna */
+    .prog-grid{grid-template-columns:1fr !important;gap:14px}
+    .mod-grid{grid-template-columns:1fr}
+
+    /* generar guía y gps: mapa debajo, ancho completo */
+    .guia-layout{grid-template-columns:1fr !important}
+    .guia-right{position:static}
+    .map-grid{grid-template-columns:1fr}
+    #gpsMap{height:340px !important;min-height:340px !important}
+    .map-frame,.map-frame iframe{min-height:300px}
+
+    /* modales: ocupan casi toda la pantalla */
+    .modal-bg{padding:12px;align-items:flex-start;overflow-y:auto}
+    .modal{width:100% !important;max-width:100%;padding:22px 18px;margin-top:8px}
+    .modal-fields-grid{grid-template-columns:1fr}
+    .firma-pad{height:150px}
+
+    /* chat en celular */
+    .chat-layout{grid-template-columns:1fr;height:auto;min-height:0}
+    .chat-dir{max-height:220px}
+    .chat-msgs{min-height:46vh}
+    .bubble{font-size:15px}
+
+    /* login */
+    .login-card{padding:28px 22px}
+
+    /* accesos del login: que no se salgan */
+    .lh-row .lh-cr{font-size:10px}
+  }
+  @media(max-width:400px){
+    .nav button{width:38px;height:38px}
+    .mod-head h1,.hero h1{font-size:26px !important}
+    .stat .v{font-size:26px}
+    .dash-total b{font-size:22px}
+  }
 </style>
 </head>
 <body>
