@@ -628,19 +628,29 @@ function badge(s){
 const STORE_KEY='transporte_db_v1';
 /* ---------- CAPA DE RED (backend en tiempo real) ---------- */
 const NET=(location.protocol==='http:'||location.protocol==='https:');  // servido por el backend
-let STATE=null,_ws=null,_pushT=null,_booted=false;
+let STATE=null,_ws=null,_pushT=null,_booted=false,_lastJSON='',_wsBooter=null,_applyT=null;
 function loadDB(){ if(STATE) return STATE; try{STATE=JSON.parse(localStorage.getItem(STORE_KEY))||{};}catch(e){STATE={};} return STATE; }
-function saveDB(db){ STATE=db; try{localStorage.setItem(STORE_KEY,JSON.stringify(db));}catch(e){} if(NET) schedulePush(); }
-function schedulePush(){ if(_pushT) clearTimeout(_pushT); _pushT=setTimeout(pushState,250); }
+function saveDB(db){ STATE=db; var s; try{s=JSON.stringify(db);}catch(e){s='';} _lastJSON=s; try{localStorage.setItem(STORE_KEY,s);}catch(e){} if(NET) schedulePush(); }
+function schedulePush(){ if(_pushT) clearTimeout(_pushT); _pushT=setTimeout(pushState,300); }
 function pushState(){ if(_ws && _ws.readyState===1){ try{_ws.send(JSON.stringify({type:'state',db:STATE}));}catch(e){} } }
 function connectWS(onFirst){
+  if(onFirst) _wsBooter=onFirst;
+  if(_ws && (_ws.readyState===0 || _ws.readyState===1)) return;   // ya conectando o conectado: no duplicar
   try{
     const proto=location.protocol==='https:'?'wss:':'ws:';
     _ws=new WebSocket(proto+'//'+location.host);
-    _ws.onmessage=function(ev){ try{ const m=JSON.parse(ev.data); if(m&&m.type==='state'){ STATE=m.db||{}; try{localStorage.setItem(STORE_KEY,JSON.stringify(STATE));}catch(e){} if(!_booted){ _booted=true; onFirst&&onFirst(); } else { applyRemoteState(); } } }catch(e){} };
-    _ws.onclose=function(){ _ws=null; setTimeout(function(){connectWS();},3000); };
+    _ws.onmessage=function(ev){
+      let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+      if(!m || m.type!=='state') return;
+      const s=JSON.stringify(m.db||{});
+      if(s===_lastJSON){ if(!_booted){ _booted=true; _wsBooter&&_wsBooter(); } return; }  // sin cambios reales: no re-dibujar
+      _lastJSON=s; STATE=m.db||{}; try{localStorage.setItem(STORE_KEY,s);}catch(e){}
+      if(!_booted){ _booted=true; _wsBooter&&_wsBooter(); }
+      else { if(_applyT) clearTimeout(_applyT); _applyT=setTimeout(applyRemoteState,120); }  // agrupa ráfagas
+    };
+    _ws.onclose=function(){ _ws=null; setTimeout(function(){connectWS();},4000); };
     _ws.onerror=function(){ try{_ws.close();}catch(e){} };
-  }catch(e){ onFirst&&onFirst(); }
+  }catch(e){ _wsBooter&&_wsBooter(); }
 }
 function applyRemoteState(){
   if(document.querySelector('.modal-bg.open')) return;                 // no interrumpir formularios abiertos
